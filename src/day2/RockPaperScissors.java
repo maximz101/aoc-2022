@@ -20,15 +20,16 @@ public class RockPaperScissors {
 
         public static Round parse(String s) {
             String[] items = s.split(" ");
-            return new Round(Item.from(items[0]), Item.from(items[1]));
+            var player1 = Item.from(items[0]);
+            return new Round(player1, ElfStrategy.nextMove(player1, Result.from(items[1])));
         }
 
         private sealed interface Item permits Rock, Paper, Scissors {
             static Item from(String item) {
                 return switch (item) {
-                    case "A", "X" -> new Rock();
-                    case "B", "Y" -> new Paper();
-                    case "C", "Z" -> new Scissors();
+                    case "A" -> new Rock();
+                    case "B" -> new Paper();
+                    case "C" -> new Scissors();
                     default -> throw new RuntimeException();
                 };
             }
@@ -54,7 +55,16 @@ public class RockPaperScissors {
         }
 
         enum Result {
-            WIN, LOOSE, DRAW
+            WIN, LOOSE, DRAW;
+
+            public static Result from(String item) {
+                return switch (item.charAt(0)) {
+                    case 'Z' -> WIN;
+                    case 'X' -> LOOSE;
+                    case 'Y' -> DRAW;
+                    default -> throw new RuntimeException();
+                };
+            }
         }
 
         private record Rock() implements Item {
@@ -66,7 +76,7 @@ public class RockPaperScissors {
 
             @Override
             public Set<Character> symbols() {
-                return Set.of('A', 'X');
+                return Set.of('A');
             }
 
             @Override
@@ -91,7 +101,7 @@ public class RockPaperScissors {
 
             @Override
             public Set<Character> symbols() {
-                return Set.of('B', 'Y');
+                return Set.of('B');
             }
 
             @Override
@@ -115,7 +125,7 @@ public class RockPaperScissors {
 
             @Override
             public Set<Character> symbols() {
-                return Set.of('C', 'Z');
+                return Set.of('C');
             }
 
             @Override
@@ -134,12 +144,23 @@ public class RockPaperScissors {
 
             public int score() {
                 var fight = player2.fight(player1);
-                var match = switch (fight){
+                var match = switch (fight) {
                     case WIN -> 6;
                     case LOOSE -> 0;
                     case DRAW -> 3;
                 };
                 return player2.value() + match;
+            }
+        }
+
+        private static class ElfStrategy {
+
+            public static Item nextMove(Item player1, Result from) {
+                return switch (from) {
+                    case WIN -> player1.predators().iterator().next();
+                    case LOOSE -> player1.preys().iterator().next();
+                    case DRAW -> player1;
+                };
             }
         }
     }
