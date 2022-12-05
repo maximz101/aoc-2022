@@ -21,7 +21,24 @@ class SupplyStacksTest {
                 move 2 from 2 to 1
                 move 1 from 1 to 2""";
 
-        var ssm = SupplyStacks.SupplyStackManager.parseInput(input.lines());
+        var ssm = SupplyStacks.SupplyStackManager.parseInput(input.lines(), new SupplyStacks.CrateMover9000());
         assertEquals("[C][M][Z]", ssm.getTopCreatesOrdered().stream().map(SupplyStacks.Crate::name).collect(Collectors.joining()));
+    }
+
+    @Test
+    void getTopCreatesTest2() {
+        var input = """
+                    [D]   \s
+                [N] [C]   \s
+                [Z] [M] [P]
+                 1   2   3\s
+                                
+                move 1 from 2 to 1
+                move 3 from 1 to 3
+                move 2 from 2 to 1
+                move 1 from 1 to 2""";
+
+        var ssm = SupplyStacks.SupplyStackManager.parseInput(input.lines(), new SupplyStacks.CrateMover9001());
+        assertEquals("[M][C][D]", ssm.getTopCreatesOrdered().stream().map(SupplyStacks.Crate::name).collect(Collectors.joining()));
     }
 }

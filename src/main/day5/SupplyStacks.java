@@ -5,14 +5,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SupplyStacks {
     public static void main(String[] args) throws IOException {
         try (var lines = Files.lines(Path.of("./input.txt"))) {
 
-            var supplyStackManger = SupplyStackManager.parseInput(lines);
-            System.out.println(supplyStackManger.getTopCreatesOrdered());
+//            var supplyStackManger = SupplyStackManager.parseInput(lines, new CrateMover9000());
+            var supplyStackManger = SupplyStackManager.parseInput(lines, new CrateMover9001());
+            System.out.println(supplyStackManger.getTopCreatesOrdered().stream().map(Crate::toString).collect(Collectors.joining()));
         }
     }
 
@@ -24,32 +26,25 @@ public class SupplyStacks {
         }
     }
 
-    private record StackAction(String fromStack, String toStack, int count) {
+    record MovingAction(String fromStack, String toStack, int count) {
     }
 
     static class SupplyStackManager {
         private final Map<String, Deque<Crate>> stacks;
 
-        private SupplyStackManager(Map<String, Deque<Crate>> stacks, List<StackAction> actions) {
+        private SupplyStackManager(Map<String, Deque<Crate>> stacks) {
             this.stacks = stacks;
-            replay(actions);
         }
 
         private SupplyStackManager() {
             stacks = new HashMap<>();
         }
 
-        private void replay(List<StackAction> actions) {
-            for (var action : actions) {
-                var origStack = stacks.get(action.fromStack());
-                var dstStack = stacks.get(action.toStack());
-                for (int i = 0; i < action.count(); i++) {
-                    dstStack.push(origStack.pop());
-                }
-            }
+        public void move(CrateMover crateMover, List<MovingAction> actions) {
+            crateMover.move(actions, stacks);
         }
 
-        public static SupplyStackManager parseInput(Stream<String> input) {
+        public static SupplyStackManager parseInput(Stream<String> input, CrateMover crateMover) {
             var iterator = input.iterator();
             if (!iterator.hasNext()) {
                 return new SupplyStackManager();
@@ -58,7 +53,9 @@ public class SupplyStacks {
             var stacks = parseStacks(iterator);
             var actions = parseActions(iterator);
 
-            return new SupplyStackManager(stacks, actions);
+            SupplyStackManager supplyStackManager = new SupplyStackManager(stacks);
+            supplyStackManager.move(crateMover, actions);
+            return supplyStackManager;
         }
 
         private static Map<String, Deque<Crate>> parseStacks(Iterator<String> iterator) {
@@ -88,28 +85,64 @@ public class SupplyStacks {
             return m;
         }
 
-        private static List<StackAction> parseActions(Iterator<String> iterator) {
+        private static List<MovingAction> parseActions(Iterator<String> iterator) {
             // move count from id  to id
             var pattern = Pattern.compile("^move\\s+(?<count>\\d+)\\s+from\\s+(?<fromId>\\d)+\\sto\\s+(?<toId>\\d)+$");
-            var list = new ArrayList<StackAction>();
+            var list = new ArrayList<MovingAction>();
             while (iterator.hasNext()) {
                 var actionLine = iterator.next();
                 var matcher = pattern.matcher(actionLine);
                 if (matcher.matches()) {
-                    list.add(new StackAction(matcher.group("fromId"), matcher.group("toId"), Integer.parseInt(matcher.group("count"))));
+                    list.add(new MovingAction(matcher.group("fromId"), matcher.group("toId"), Integer.parseInt(matcher.group("count"))));
                 }
             }
             return list;
         }
 
         public List<Crate> getTopCreatesOrdered() {
-            Iterator<Map.Entry<String, Deque<Crate>>> iterator = stacks.entrySet().iterator();
+            var iterator = stacks.entrySet().iterator();
             var r = new TreeMap<Integer, Crate>();
             while (iterator.hasNext()) {
                 Map.Entry<String, Deque<Crate>> next = iterator.next();
                 r.put(Integer.parseInt(next.getKey()), next.getValue().peekFirst());
             }
             return r.values().stream().toList();
+        }
+    }
+
+    interface CrateMover {
+        void move(List<MovingAction> movingAction, Map<String, Deque<Crate>> stacks);
+    }
+
+    static class CrateMover9000 implements CrateMover {
+
+        @Override
+        public void move(List<MovingAction> movingActions, Map<String, Deque<Crate>> stacks) {
+            for (var action : movingActions) {
+                var origStack = stacks.get(action.fromStack());
+                var dstStack = stacks.get(action.toStack());
+                for (int i = 0; i < action.count(); i++) {
+                    dstStack.push(origStack.pop());
+                }
+            }
+        }
+    }
+
+    static class CrateMover9001 implements CrateMover {
+
+        @Override
+        public void move(List<MovingAction> movingActions, Map<String, Deque<Crate>> stacks) {
+            for (var action : movingActions) {
+                var origStack = stacks.get(action.fromStack());
+                var dstStack = stacks.get(action.toStack());
+                var tmpStack = new ArrayDeque<Crate>();
+                for (int i = 0; i < action.count(); i++) {
+                    tmpStack.push(origStack.pop());
+                }
+                for (int i = 0; i < action.count(); i++) {
+                    dstStack.push(tmpStack.pop());
+                }
+            }
         }
     }
 }
