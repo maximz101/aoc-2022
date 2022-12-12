@@ -3,12 +3,10 @@ package day9;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 public final class GridCell implements Comparable<GridCell> {
     private final Position position;
-    private final List<RopeComponent> items;
+    private final List<Rope> items;
 
     public GridCell(Position position) {
         this.position = position;
@@ -19,35 +17,22 @@ public final class GridCell implements Comparable<GridCell> {
         return position;
     }
 
-    public List<RopeComponent> items() {
+    public List<Rope> items() {
         return List.copyOf(items);
     }
 
 
-    public void add(RopeComponent ropeComponent) {
-        items.add(ropeComponent);
-    }
-
-    public RopeComponent removeHead() {
-        return removeAndGet(Head.class::isInstance);
-    }
-
-    public RopeComponent removeTail() {
-        return removeAndGet(Tail.class::isInstance);
-    }
-
-    private RopeComponent removeAndGet(Predicate<RopeComponent> isInstance) {
-        Optional<RopeComponent> first = items.stream().filter(isInstance).findFirst();
-        if (first.isPresent()) {
-            RopeComponent ropeComponent = first.get();
-            items.remove(ropeComponent);
-            return ropeComponent;
-        }
-        return null;
+    public void add(Rope rope) {
+        items.add(rope);
     }
 
     public boolean isEmpty() {
         return items.isEmpty();
+    }
+
+    public Rope remove(Rope rope) {
+        items.remove(rope);
+        return rope;
     }
 
     @Override

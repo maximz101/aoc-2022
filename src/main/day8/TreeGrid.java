@@ -4,18 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public class TreeGrid {
-    record Coordinate(int x, int y) {
-
-        Coordinate {
-            if (x < 0 || y < 0) {
-                throw new IllegalArgumentException();
-            }
-        }
-
-    }
-
     private final int size;
-
     private final Tree[][] grid;
 
     public TreeGrid(int size) {
@@ -74,5 +63,15 @@ public class TreeGrid {
             }
             System.out.println();
         }
+    }
+
+    record Coordinate(int x, int y) {
+
+        Coordinate {
+            if (x < 0 || y < 0) {
+                throw new IllegalArgumentException();
+            }
+        }
+
     }
 }

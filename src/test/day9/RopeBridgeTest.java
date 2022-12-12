@@ -16,7 +16,27 @@ class RopeBridgeTest {
 
     @Test
     void ropeBridge_1() {
-        RopeGrid ropeGrid = RopeHeadMovesParser.parseToGrid(INPUT.lines());
+        RopeGrid ropeGrid = RopeHeadMovesParser.parseToGrid(INPUT.lines(), 2);
         Assertions.assertEquals(13, ropeGrid.getTailVisitedPosCount());
+    }
+
+    @Test
+    void ropeBridge_2() {
+        RopeGrid ropeGrid = RopeHeadMovesParser.parseToGrid(INPUT.lines(), 10);
+        Assertions.assertEquals(1, ropeGrid.getTailVisitedPosCount());
+    }
+    @Test
+    void ropeBridge_3() {
+        var in = """
+                R 5
+                U 8
+                L 8
+                D 3
+                R 17
+                D 10
+                L 25
+                U 20""";
+        RopeGrid ropeGrid = RopeHeadMovesParser.parseToGrid(in.lines(), 10);
+        Assertions.assertEquals(36, ropeGrid.getTailVisitedPosCount());
     }
 }

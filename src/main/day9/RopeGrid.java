@@ -13,56 +13,57 @@ import java.util.stream.IntStream;
 public class RopeGrid {
     public static final Position START = new Position(0, 0);
     private final Map<Position, GridCell> grid = new HashMap<>();
-    private Set<Position> tailPositions = new HashSet<>();
-    private GridCell currentHeadCell;
-    private GridCell currentTailCell;
+    private final Set<Position> tailPositionsTrackerSet = new HashSet<>();
+    private final Rope ropeHead;
 
-
-    private RopeGrid(Position startingPosition) {
-        var cell = new GridCell(startingPosition);
-        cell.add(new Head());
-        cell.add(new Tail());
-        currentTailCell = cell;
-        currentHeadCell = cell;
-        grid.put(startingPosition, cell);
-        tailPositions.add(startingPosition);
+    private RopeGrid(Position startingPosition, int size) {
+        ropeHead = Rope.create(size, startingPosition);
+        for (var ropeComponent : ropeHead) {
+            add(startingPosition, ropeComponent);
+        }
+        tailPositionsTrackerSet.add(startingPosition);
     }
 
-    public static RopeGrid create() {
-        return new RopeGrid(START);
+    public static RopeGrid create(int size) {
+        return new RopeGrid(START, size);
     }
 
-    public void add(Position position, RopeComponent ropeComponent) {
-        getCell(position).add(ropeComponent);
+    public void add(Position position, Rope rope) {
+        getCell(position).add(rope);
     }
 
-    public void moveHead(RopeHeadMove ropeHeadMove) {
-        var position = currentHeadCell.position();
-        var stepsPositions = stepsPositions(ropeHeadMove, position);
-        var newPosition = stepsPositions.get(ropeHeadMove.steps());
-        GridCell newCell = getCell(newPosition);
-        newCell.add(currentHeadCell.removeHead());
-        currentHeadCell = newCell;
-        updateTail(stepsPositions);
+    public void moveHead(RopeMove ropeMove) {
+        var moves = ropeMove.atomicMoves();
+        for (var nextMove : moves) {
+            move(ropeHead, ropeHead.getPosition().getNextForMove(nextMove));
+        }
     }
 
-    private void updateTail(List<Position> headPositions) {
-        for (int i = 1; i < headPositions.size(); i++) {
-            Position tailPosition = currentTailCell.position();
-            if (!tailPosition.isAdjacent(headPositions.get(i))) {
-                Position prevHeadPosition = headPositions.get(i - 1);
-                moveTailTo(prevHeadPosition);
-                tailPositions.add(prevHeadPosition);
+    private void move(Rope rope, Position toPosition) {
+        handleCellMoving(rope, toPosition);
+
+        handleNext(rope, toPosition);
+    }
+
+    private void handleNext(Rope rope, Position toPosition) {
+        var ropeIt = rope.iterator();
+        ropeIt.next();
+        if (ropeIt.hasNext()) {
+            var next = ropeIt.next();
+            if (!next.isAdjacent(rope)) {
+                move(next, next.getPosition().nextPositionToBecomeAdj(toPosition));
             }
         }
     }
 
-    private void moveTailTo(Position prevHeadPosition) {
-        var currentTailPos = currentTailCell.position();
-        RopeComponent tail = getCell(currentTailPos).removeTail();
-        GridCell gridCell = getCell(prevHeadPosition);
-        gridCell.add(tail);
-        currentTailCell = gridCell;
+    private void handleCellMoving(Rope rope, Position toPosition) {
+        var fromCell = getCell(rope.getPosition());
+        var toCell = getCell(toPosition);
+        toCell.add(fromCell.remove(rope));
+        rope.setPosition(toPosition);
+        if (rope.isTail()) {
+            tailPositionsTrackerSet.add(toPosition);
+        }
     }
 
     private GridCell getCell(Position position) {
@@ -72,14 +73,14 @@ public class RopeGrid {
         return grid.computeIfAbsent(position, GridCell::new);
     }
 
-    private static List<Position> stepsPositions(RopeHeadMove ropeHeadMove, Position position) {
-        return IntStream.range(0, ropeHeadMove.steps() + 1)
-                .mapToObj(step -> position.getNext(ropeHeadMove.direction(), step))
+    private static List<Position> stepsPositions2(RopeMove ropeMove, Position starting) {
+        return IntStream.range(0, ropeMove.steps() + 1)
+                .mapToObj(step -> starting.getNextForMove(ropeMove))
                 .toList();
     }
 
     public int getTailVisitedPosCount() {
-        return tailPositions.size();
+        return tailPositionsTrackerSet.size();
     }
 
     public void print() {
@@ -120,7 +121,7 @@ public class RopeGrid {
                     System.out.print("s");
                 } else {
                     var gridCell = getCell(p);
-                    if (tailPositions.contains(p)) {
+                    if (tailPositionsTrackerSet.contains(p)) {
                         System.out.print("#");
                     } else {
                         System.out.print(".");
