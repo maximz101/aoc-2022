@@ -1,9 +1,7 @@
 package day10;
 
-import java.util.ArrayDeque;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public class Cpu {
@@ -13,13 +11,24 @@ public class Cpu {
     private int x = 1;
 
     private final Queue<Instruction> instructionsQueue;
+    private final List<Consumer<Integer>> consumers;
 
     private Cpu() {
-        instructionsQueue = new ArrayDeque<>();
+        this.instructionsQueue = new ArrayDeque<>();
+        this.consumers = new ArrayList<>();
+    }
+
+    private Cpu(List<Consumer<Integer>> consumers) {
+        this.instructionsQueue = new ArrayDeque<>();
+        this.consumers = new ArrayList<>(consumers);
     }
 
     public static Cpu create() {
         return new Cpu();
+    }
+
+    public static Cpu create(List<Consumer<Integer>> consumers) {
+        return new Cpu(consumers);
     }
 
     public void push(List<Instruction> instructions) {
@@ -36,11 +45,13 @@ public class Cpu {
 
             tick();
 
-            if (currentInstructionDone()) {
-                applyInstruction();
+            if (noInstructionOrDone()) {
+                applyIfInstruction();
                 currentInstruction = instructionsQueue.poll();
-                currentInstructionStartCycle = currentCycle + 1;
+                currentInstructionStartCycle = currentCycle;
             }
+
+            consumers.forEach(integerConsumer -> integerConsumer.accept(x));
 
             if (isSignalCycle()) {
                 builder.add(currentCycle * x);
@@ -53,7 +64,7 @@ public class Cpu {
         return currentCycle == 20 || Set.of(60, 100, 140, 180, 220).contains(currentCycle);
     }
 
-    private void applyInstruction() {
+    private void applyIfInstruction() {
         if (currentInstruction != null) {
             x = currentInstruction.execute(x);
         }
@@ -63,7 +74,7 @@ public class Cpu {
         currentCycle++;
     }
 
-    private boolean currentInstructionDone() {
-        return currentInstruction == null || currentCycle == currentInstructionStartCycle + currentInstruction.durationInCycles() - 1;
+    private boolean noInstructionOrDone() {
+        return currentInstruction == null || currentCycle == currentInstructionStartCycle + currentInstruction.durationInCycles();
     }
 }
